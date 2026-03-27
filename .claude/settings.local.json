@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__figma__get_design_context",
+      "mcp__figma__get_screenshot",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(rm:*)",
+      "Bash(npx next:*)",
+      "Bash(PATH=\"/c/nvm4w/nodejs:$PATH\" npx next:*)",
+      "WebSearch",
+      "WebFetch(domain:www.pexels.com)",
+      "WebFetch(domain:mixkit.co)",
+      "WebFetch(domain:coverr.co)",
+      "Bash(find /f/1-Zeratype/2026/Zeracode/zeraweb -name index.html -o -name *.html)",
+      "Bash(find /f/1-Zeratype/2026/Zeracode/zeraweb -name *.jpg -o -name *.png)",
+      "Bash(npx shadcn@latest init -d --base-color neutral --css-variables true)",
+      "Bash(npx shadcn@latest init --help)",
+      "Bash(npx shadcn@latest init -d --css-variables)",
+      "Bash(npx shadcn@latest add card separator -y)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)"
+    ]
+  }
+}
