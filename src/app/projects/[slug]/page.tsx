@@ -77,7 +77,7 @@ export default async function ProjectPage({
         <div className="absolute inset-0 flex items-end justify-center">
           <div className="w-full max-w-3xl mx-auto px-[30px] pb-8 lg:pb-12">
             {project.status === "inactive" && (
-              <span className="inline-block mb-3 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white/80 text-[11px] font-medium border border-white/20">
+              <span className="inline-block mb-3 text-white/60 text-[11px] font-medium uppercase tracking-wide">
                 Proyecto inactivo
               </span>
             )}
@@ -92,13 +92,13 @@ export default async function ProjectPage({
       <div className="w-full max-w-3xl mx-auto px-[30px] py-10 lg:py-16">
         {/* Meta row */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
-          <span className="px-3 py-1.5 rounded-full bg-black text-white text-[12px] font-medium capitalize">
+          <span className="text-black text-[12px] font-semibold capitalize">
             {project.category}
           </span>
           {project.tags.map((tag) => (
             <span
               key={tag}
-              className="px-3 py-1.5 rounded-full border border-black/15 text-black/70 text-[12px] font-medium capitalize"
+              className="text-black/50 text-[12px] font-medium capitalize"
             >
               {tag.replace(/-/g, " ")}
             </span>
@@ -114,7 +114,7 @@ export default async function ProjectPage({
                 href={`${socialBaseUrls[platform]}${handle}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 text-black/70 text-[13px] font-medium hover:bg-black hover:text-white hover:border-black transition-colors duration-200"
+                className="inline-flex items-center gap-2 text-black/50 text-[13px] font-medium hover:text-black transition-colors duration-200"
               >
                 <SocialIcon platform={platform} />
                 <span>@{handle}</span>

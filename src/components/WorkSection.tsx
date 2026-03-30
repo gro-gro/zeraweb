@@ -25,8 +25,8 @@ export default function WorkSection() {
           <button
             key={filter}
             onClick={() => setActiveFilter(activeFilter === filter ? null : filter)}
-            className={`px-5 py-[10px] rounded-full border-2 border-black text-[20px] font-normal transition-colors duration-200 cursor-pointer
-              ${activeFilter === filter ? "bg-black text-white" : "bg-transparent text-black hover:bg-black/5"}
+            className={`text-[20px] font-normal transition-colors duration-200 cursor-pointer
+              ${activeFilter === filter ? "text-black font-semibold" : "text-black/40 hover:text-black"}
             `}
           >
             {filter}

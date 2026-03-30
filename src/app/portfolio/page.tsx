@@ -53,13 +53,13 @@ function FilterDropdown({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-2 px-5 py-[10px] rounded-full border-2 text-[15px] font-normal transition-colors duration-200 cursor-pointer
-          ${selected.length > 0 ? "bg-black text-white border-black" : "bg-transparent text-black border-black hover:bg-black/5"}
+        className={`flex items-center gap-2 text-[15px] font-normal transition-colors duration-200 cursor-pointer
+          ${selected.length > 0 ? "text-black font-semibold" : "text-black/40 hover:text-black"}
         `}
       >
         {label}
         {selected.length > 0 && (
-          <span className="text-[12px] font-semibold w-5 h-5 rounded-full flex items-center justify-center bg-white/20 text-white">
+          <span className="text-[12px] font-semibold text-black/40">
             {selected.length}
           </span>
         )}
@@ -243,8 +243,8 @@ export default function PortfolioPage() {
                     activeCategory === filter ? null : filter
                   )
                 }
-                className={`px-5 py-[10px] rounded-full border-2 border-black text-[15px] font-normal transition-colors duration-200 cursor-pointer
-                  ${activeCategory === filter ? "bg-black text-white" : "bg-transparent text-black hover:bg-black/5"}
+                className={`text-[15px] font-normal transition-colors duration-200 cursor-pointer
+                  ${activeCategory === filter ? "text-black font-semibold" : "text-black/40 hover:text-black"}
                 `}
               >
                 {filter}
@@ -314,7 +314,7 @@ export default function PortfolioPage() {
 
                     {project.status === "inactive" && (
                       <div className="absolute top-3 right-3 z-10">
-                        <span className="px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/70 text-[9px] font-medium border border-white/20">
+                        <span className="text-white/60 text-[9px] font-medium uppercase tracking-wide">
                           Inactivo
                         </span>
                       </div>

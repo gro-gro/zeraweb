@@ -21,7 +21,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-0 left-0 right-0 z-40"
+        className="fixed top-[15px] left-[15px] right-[15px] z-40"
         style={{ mixBlendMode: "difference", pointerEvents: "none" }}
       >
         <div
@@ -83,7 +83,7 @@ export default function Navbar() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            className="fixed inset-0 z-30 bg-white pt-[56px] lg:hidden"
+            className="fixed inset-0 z-30 bg-white pt-[80px] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

@@ -74,7 +74,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
         {/* Inactive badge */}
         {project.status === "inactive" && (
           <div className="absolute top-4 right-4 z-10">
-            <span className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm text-white/70 text-[10px] font-medium border border-white/20">
+            <span className="text-white/60 text-[10px] font-medium uppercase tracking-wide">
               Inactivo
             </span>
           </div>
@@ -102,7 +102,7 @@ export default function ProjectCard({ project, index }: ProjectCardProps) {
               {project.tags.slice(0, 2).map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center px-2.5 py-[5px] rounded-full bg-white/15 backdrop-blur-sm text-white text-[10px] sm:text-[11px] font-medium border border-white/20 capitalize"
+                  className="inline-flex items-center text-white/70 text-[10px] sm:text-[11px] font-medium capitalize"
                 >
                   {tag.replace(/-/g, " ")}
                 </span>
