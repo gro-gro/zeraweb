@@ -10,8 +10,6 @@ const easeOut = [0.16, 1, 0.3, 1] as const;
 const navLinks = [
   { label: "Portfolio", href: "/portfolio" },
   { label: "Nosotros", href: "/nosotros" },
-  { label: "Carreras", href: "/carreras" },
-  { label: "Blog", href: "/blog" },
   { label: "Contacto", href: "/contacto" },
 ];
 

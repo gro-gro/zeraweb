@@ -217,21 +217,6 @@ export default function HeroSection() {
           <span className="hidden lg:inline">SOMOS MEDIA<br />BUILDERS</span>
         </motion.h1>
 
-        {/* Subtitle */}
-        <motion.p
-          className="mt-4 text-[11px] text-white text-center lg:text-[13px]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5, ease }}
-        >
-          <span className="font-semibold">Confian en </span>
-          <span
-            className="font-extrabold"
-            style={{ fontFamily: "'PP Telegraf', sans-serif" }}
-          >
-            Zeratype
-          </span>
-        </motion.p>
       </div>
 
       {/* Bottom overlay info */}
