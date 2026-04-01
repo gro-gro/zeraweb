@@ -19,7 +19,9 @@
       "Bash(npx shadcn@latest init -d --css-variables)",
       "Bash(npx shadcn@latest add card separator -y)",
       "Bash(gh auth:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "WebFetch(domain:kube.io)",
+      "Bash(wait)"
     ]
   }
 }

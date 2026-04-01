@@ -1,184 +1,336 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion, useInView, useScroll, useMotionValueEvent } from "framer-motion";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import {
+  motion, AnimatePresence,
+  useScroll, useMotionValue, useSpring, useTransform, useMotionValueEvent,
+  animate,
+} from "framer-motion";
 import { Eye, Heart, Users } from "lucide-react";
 import NumberFlow from "@number-flow/react";
+import { lenisInstance } from "./SmoothScroll";
 
-const easeOut  = [0.16, 1, 0.3, 1]    as const;
-const smooth   = [0.4, 0, 0.2, 1]     as const;
+const easeOut   = [0.16, 1, 0.3, 1] as const;
+const easeIn    = [0.4, 0, 1, 1]    as const;
+const easeInOut = [0.4, 0, 0.6, 1]  as const;
 
-const NUMBER_TIMING = { duration: 1800, easing: "cubic-bezier(0.16, 1, 0.3, 1)" };
+const NUMBER_TIMING = { duration: 2000, easing: "cubic-bezier(0.4, 0, 0.6, 1)" };
 
 const OPENING_WORDS = ["Construimos", "narrativa", "desde", "temáticas", "+", "personas"];
 const CLOSING_WORDS = ["que", "genera", "impacto", "real."];
 
-type Phase = "idle" | "zoom-out" | "split";
-
 export default function VideoSplitSection() {
-  const openingRef = useRef<HTMLParagraphElement>(null);
-  const sectionRef = useRef<HTMLElement>(null);
+  const sectionRef    = useRef<HTMLElement>(null);
+  const phase2Ref     = useRef<HTMLDivElement>(null);
+  const showCardsRef  = useRef(false);
+  const textTriggered = useRef(false);
 
-  const [phase,         setPhase]         = useState<Phase>("idle");
-  const [statsActive,   setStatsActive]   = useState(false);
-  const [closingVisible,setClosingVisible] = useState(false);
-  const phaseRef = useRef<Phase>("idle");
+  const [textVisible, setTextVisible] = useState(false);
+  const [showCards,   setShowCards]   = useState(false);
+  const [statsActive, setStatsActive] = useState(false);
+  const [done,        setDone]        = useState(false);
 
-  const isOpeningInView = useInView(openingRef, { once: true, margin: "-80px" });
-  const isBlockInView   = useInView(sectionRef, { once: true, margin: "-40%" });
+  /* ── Single spring-driven magnetic system ── */
+  const rawY     = useMotionValue(0);
+  const rawScale = useMotionValue(1);
 
-  // Trackea el scroll de la sección completa (sin sticky).
-  // offset ["start end","end start"]: v=0 cuando el top entra por abajo, v=1 cuando el bottom sale por arriba.
-  // Disparamos al 55% — el video ya ha sido visible un buen rato.
+  /*
+   * Underdamped springs: elastic overshoot on build-up and snap-back.
+   * One pipeline — scroll drives raw values, springs smooth them.
+   */
+  const magneticY     = useSpring(rawY,     { stiffness: 120, damping: 14, mass: 0.7 });
+  const magneticScale = useSpring(rawScale, { stiffness: 120, damping: 14, mass: 0.7 });
+
+  /* Clamp scale so spring overshoot never exceeds 1.0 (stays within container) */
+  const clampedScale  = useTransform(magneticScale, (v) => Math.min(v, 1));
+  const textMagneticY = useTransform(magneticY, (v) => v * 0.35);
+
+  /*
+   * gapPx drives the split: starts at 0 (one solid block),
+   * springs open to 10 after the video dissolves.
+   */
+  const gapPx  = useMotionValue(0);
+  const rowGap = useTransform(gapPx, (v) => `${v}px`);
+  const colGap = rowGap;
+
+  useEffect(() => { showCardsRef.current = showCards; }, [showCards]);
+
+  /* ── Early tracker: text fires before sticky zone ── */
+  const { scrollYProgress: earlyProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end end"],
+  });
+
+  useMotionValueEvent(earlyProgress, "change", (v) => {
+    if (v > 0.12 && !textTriggered.current) {
+      textTriggered.current = true;
+      setTextVisible(true);
+    }
+  });
+
+  /* ── Main tracker: magnetic feedback (bidirectional) ── */
+  /*
+   * Offset starts at "start 40%" — the magnetic pull begins building
+   * while the section is still scrolling naturally into view.
+   * One continuous motion: scroll drives rawY + rawScale → springs
+   * add elastic overshoot → if you let go, everything springs back.
+   */
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start end", "end start"],
+    offset: ["start 40%", "end end"],
   });
 
   useMotionValueEvent(scrollYProgress, "change", (v) => {
-    if (v > 0.45 && phase === "idle") setPhase("zoom-out");
+    if (showCardsRef.current) return;
+    const t     = Math.min(1, Math.max(0, v / 0.45));
+    const eased = Math.pow(t, 1.8);
+    rawY.set(eased * 40);
+    rawScale.set(1 - eased * 0.045);
   });
 
-  function onZoomOutComplete() {
-    setPhase(prev => {
-      const next = prev === "zoom-out" ? "split" : prev;
-      phaseRef.current = next;
-      return next;
+  /* ── Phase 2 fires ── */
+  useEffect(() => {
+    if (!showCards) return;
+
+    /*
+     * Smooth ease-out return instead of a hard set(0).
+     * This prevents the "sudden stop" — the block drifts back
+     * gently while the transition starts, maintaining scroll vibe.
+     */
+    animate(rawY,     0, { duration: 0.9, ease: easeInOut });
+    animate(rawScale, 1, { duration: 0.9, ease: easeInOut });
+
+    /*
+     * Gap springs open with slight overshoot — feels physical,
+     * like the block is cracking apart rather than sliding.
+     * Delay = ~video fade duration so it reads as "splits after dissolve".
+     */
+    const ctrl = animate(gapPx, 10, {
+      type: "spring",
+      stiffness: 160,
+      damping: 14,
+      delay: 0.6,
     });
-  }
+    return () => ctrl.stop();
+  }, [showCards]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Usamos phaseRef para evitar stale closure — solo actúa si el split ya terminó
-  function onCardsComplete() {
-    if (phaseRef.current !== "split" || statsActive) return;
-    setStatsActive(true);
-    setTimeout(() => setClosingVisible(true), 50);
-  }
+  /* ── Trigger 2 ── */
+  useEffect(() => {
+    const el = phase2Ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShowCards(true);
+          setTimeout(() => setStatsActive(true), 700);
+          setTimeout(() => setDone(true), 3400);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
-  const isSplit = phase === "split";
+  /* ── Collapse ── */
+  useLayoutEffect(() => {
+    if (!done || !sectionRef.current) return;
+    const targetY = sectionRef.current.offsetTop;
+    if (lenisInstance) {
+      lenisInstance.scrollTo(targetY, { immediate: true });
+    } else {
+      window.scrollTo(0, targetY);
+    }
+  }, [done]);
+
+  /* ── Card split configs: each piece has its own spring personality ── */
+  const cardSplitProps = [
+    /* Card 1 — peels up */
+    {
+      initial: { opacity: 0, y: -22, scale: 0.92, rotate: -0.4 },
+      exit:    { opacity: 0, y: -22, scale: 0.92, rotate: -0.4 },
+      spring:  { type: "spring" as const, stiffness: 240, damping: 24, delay: 0.06 },
+    },
+    /* Card 2 — swings bottom-left */
+    {
+      initial: { opacity: 0, y: 26, x: -14, scale: 0.91, rotate: 1.1 },
+      exit:    { opacity: 0, y: 26, x: -14, scale: 0.91, rotate: 1.1 },
+      spring:  { type: "spring" as const, stiffness: 190, damping: 21, delay: 0.14 },
+    },
+    /* Card 3 — swings bottom-right, slightly stiffer */
+    {
+      initial: { opacity: 0, y: 26, x: 14, scale: 0.91, rotate: -1.1 },
+      exit:    { opacity: 0, y: 26, x: 14, scale: 0.91, rotate: -1.1 },
+      spring:  { type: "spring" as const, stiffness: 210, damping: 22, delay: 0.10 },
+    },
+  ] as const;
+
+  const cardVisible   = { opacity: 1, y: 0, x: 0, scale: 1, rotate: 0 };
+  const cardInvisible = (i: 0 | 1 | 2) => cardSplitProps[i].initial;
 
   return (
-    <section ref={sectionRef} className="mx-auto max-w-[1600px] px-[30px] pt-20 pb-24 lg:px-[60px] lg:pt-28 lg:pb-36 xl:px-[120px] xl:pt-32">
+    <section
+      ref={sectionRef}
+      className="relative"
+      style={done ? undefined : { height: "200vh" }}
+    >
+      {!done && (
+        <div
+          ref={phase2Ref}
+          aria-hidden="true"
+          className="absolute w-px h-px"
+          style={{ top: "150vh" }}
+        />
+      )}
 
-      {/* Opening text */}
-      <p
-        ref={openingRef}
-        className="text-[42px] leading-[1.15] font-normal mb-8 lg:text-[48px] lg:mb-10 xl:text-[56px]"
+      <div
+        className={
+          done
+            ? "min-h-screen flex flex-col justify-center"
+            : "sticky top-0 h-screen flex flex-col justify-center"
+        }
       >
-        {OPENING_WORDS.map((word, i) => (
-          <motion.span
-            key={i}
-            className="inline-block mr-[0.22em]"
-            initial={{ y: 18, opacity: 0 }}
-            animate={isOpeningInView ? { y: 0, opacity: 1 } : {}}
-            transition={{ duration: 0.95, ease: easeOut, delay: 0.4 + i * 0.14 }}
-          >
-            {word}
-          </motion.span>
-        ))}
-      </p>
+        <div className="mx-auto max-w-[1600px] px-[30px] lg:px-[60px] xl:px-[120px] w-full">
 
-      {/* Stats block — aparece de abajo a arriba cuando termina el opening text */}
-      <motion.div
-        className="relative mb-8 lg:mb-10"
-        initial={{ y: 30, opacity: 0 }}
-        animate={isBlockInView ? { y: 0, opacity: 1 } : {}}
-        transition={{ duration: 0.8, ease: easeOut }}
-      >
-        <motion.div
-          style={{ transformOrigin: "center center" }}
-          animate={{ scale: phase === "zoom-out" ? 0.88 : 1 }}
-          transition={{
-            duration: phase === "zoom-out" ? 0.5 : 0.75,
-            ease: smooth,
-          }}
-          onAnimationComplete={onZoomOutComplete}
-        >
-          {/* Video — se desvanece al dividirse */}
-          <motion.div
-            className="absolute inset-0 z-10 rounded-[20px] overflow-hidden bg-violet"
-            animate={{ opacity: isSplit ? 0 : 1 }}
-            transition={{ duration: 0.55, ease: smooth }}
-          >
-            <video autoPlay muted loop playsInline className="w-full h-full object-cover">
-              <source src="https://assets.mixkit.co/videos/29982/29982-1080.mp4" type="video/mp4" />
-            </video>
+          {/* ── Opening text ── */}
+          <motion.div style={{ y: textMagneticY }}>
+            <p className="text-[42px] leading-[1.15] font-normal mb-6 lg:text-[48px] lg:mb-8 xl:text-[56px]">
+              {OPENING_WORDS.map((word, i) => (
+                <motion.span
+                  key={word + i}
+                  className="inline-block mr-[0.22em]"
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={textVisible ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.65, ease: easeOut, delay: i * 0.09 }}
+                >
+                  {word}
+                </motion.span>
+              ))}
+            </p>
           </motion.div>
 
-          {/* Cards: aparecen primero, luego los gaps se abren */}
-          <motion.div
-            className="flex flex-col"
-            animate={{ opacity: isSplit ? 1 : 0, rowGap: isSplit ? "10px" : "0px" }}
-            transition={{
-              opacity: { duration: 0.45, ease: smooth },
-              rowGap:  { duration: 0.55, ease: smooth, delay: 0.3 },
-            }}
-            onAnimationComplete={onCardsComplete}
-          >
-            <div className="bg-violet rounded-[20px] p-6 overflow-hidden min-h-[158px]">
-              <Eye className="w-5 h-5 text-white/50 mb-4" />
-              <p className="text-white font-black text-[76px] leading-[1.2] tracking-[-6px] lg:text-[96px]">
-                <NumberFlow
-                  value={statsActive ? 3300000000 : 3100000000}
-                  format={{ notation: "compact", maximumFractionDigits: 1 }}
-                  transformTiming={NUMBER_TIMING}
-                  spinTiming={NUMBER_TIMING}
-                  opacityTiming={NUMBER_TIMING}
-                />
-              </p>
-              <p className="text-white/50 text-[10px] tracking-[-0.8px] lg:text-[12px]">Impresiones totales</p>
-            </div>
+          {/* ── Video / Cards block ── */}
+          <div className="relative mb-6 lg:mb-8">
+            <motion.div style={{ y: magneticY, scale: clampedScale }}>
 
-            <motion.div
-              className="flex"
-              animate={{ columnGap: isSplit ? "10px" : "0px" }}
-              transition={{ duration: 0.55, ease: smooth, delay: 0.3 }}
-            >
-              <div className="flex-1 bg-violet rounded-[20px] p-6 overflow-hidden min-h-[158px]">
-                <Heart className="w-5 h-5 text-white/50 mb-4" />
-                <p className="text-white font-black text-[50px] leading-[1.2] tracking-[-4px] lg:text-[64px]">
-                  <NumberFlow
-                    value={statsActive ? 16600000 : 16200000}
-                    format={{ notation: "compact", maximumFractionDigits: 1 }}
-                    transformTiming={NUMBER_TIMING}
-                    spinTiming={NUMBER_TIMING}
-                    opacityTiming={NUMBER_TIMING}
-                  />
-                </p>
-                <p className="text-white/50 text-[10px] tracking-[-0.8px] lg:text-[12px]">Seguidores combinados</p>
-              </div>
+              {/* Cards at final position from the start */}
+              <motion.div className="flex flex-col" style={{ rowGap }}>
 
-              <div className="flex-1 bg-violet rounded-[20px] p-6 overflow-hidden min-h-[158px]">
-                <Users className="w-5 h-5 text-white/50 mb-4" />
-                <p className="text-white font-black text-[50px] leading-[1.2] tracking-[-4px] lg:text-[64px]">
-                  <NumberFlow
-                    value={statsActive ? 29 : 15}
-                    transformTiming={NUMBER_TIMING}
-                    spinTiming={NUMBER_TIMING}
-                    opacityTiming={NUMBER_TIMING}
-                  />
-                </p>
-                <p className="text-white/50 text-[9px] tracking-[-0.8px] lg:text-[12px]">Creadores únicos</p>
-              </div>
+                {/* Card 1 */}
+                <motion.div
+                  className="bg-violet rounded-[20px] p-6 overflow-hidden min-h-[158px]"
+                  initial={cardSplitProps[0].initial}
+                  animate={showCards ? cardVisible : cardInvisible(0)}
+                  transition={cardSplitProps[0].spring}
+                >
+                  <Eye className="w-5 h-5 text-white/50 mb-4" />
+                  <p className="text-white font-black text-[76px] leading-[1.2] tracking-[-6px] lg:text-[96px]">
+                    <NumberFlow
+                      value={statsActive ? 3300000000 : 3100000000}
+                      format={{ notation: "compact", maximumFractionDigits: 1 }}
+                      transformTiming={NUMBER_TIMING}
+                      spinTiming={NUMBER_TIMING}
+                      opacityTiming={NUMBER_TIMING}
+                    />
+                  </p>
+                  <p className="text-white/50 text-[10px] tracking-[-0.8px] lg:text-[12px]">
+                    Impresiones totales
+                  </p>
+                </motion.div>
+
+                <motion.div className="flex" style={{ columnGap: colGap }}>
+
+                  {/* Card 2 */}
+                  <motion.div
+                    className="flex-1 bg-violet rounded-[20px] p-6 overflow-hidden min-h-[158px]"
+                    initial={cardSplitProps[1].initial}
+                    animate={showCards ? cardVisible : cardInvisible(1)}
+                    transition={cardSplitProps[1].spring}
+                  >
+                    <Heart className="w-5 h-5 text-white/50 mb-4" />
+                    <p className="text-white font-black text-[clamp(32px,9vw,50px)] leading-[1.2] tracking-[-3px] lg:text-[64px] lg:tracking-[-4px]">
+                      <NumberFlow
+                        value={statsActive ? 16600000 : 16200000}
+                        format={{ notation: "compact", maximumFractionDigits: 1 }}
+                        transformTiming={NUMBER_TIMING}
+                        spinTiming={NUMBER_TIMING}
+                        opacityTiming={NUMBER_TIMING}
+                      />
+                    </p>
+                    <p className="text-white/50 text-[10px] tracking-[-0.8px] lg:text-[12px]">
+                      Seguidores combinados
+                    </p>
+                  </motion.div>
+
+                  {/* Card 3 */}
+                  <motion.div
+                    className="flex-1 bg-violet rounded-[20px] p-6 overflow-hidden min-h-[158px]"
+                    initial={cardSplitProps[2].initial}
+                    animate={showCards ? cardVisible : cardInvisible(2)}
+                    transition={cardSplitProps[2].spring}
+                  >
+                    <Users className="w-5 h-5 text-white/50 mb-4" />
+                    <p className="text-white font-black text-[clamp(32px,9vw,50px)] leading-[1.2] tracking-[-3px] lg:text-[64px] lg:tracking-[-4px]">
+                      <NumberFlow
+                        value={statsActive ? 29 : 15}
+                        transformTiming={NUMBER_TIMING}
+                        spinTiming={NUMBER_TIMING}
+                        opacityTiming={NUMBER_TIMING}
+                      />
+                    </p>
+                    <p className="text-white/50 text-[9px] tracking-[-0.8px] lg:text-[12px]">
+                      Creadores únicos
+                    </p>
+                  </motion.div>
+
+                </motion.div>
+              </motion.div>
+
+              {/*
+               * Video: pure opacity + blur exit.
+               * Blur expands as it fades → "dissolves into light" rather
+               * than cleanly disappearing, reinforcing the split feeling.
+               */}
+              <AnimatePresence>
+                {!showCards && (
+                  <motion.div
+                    key="video"
+                    className="absolute inset-0 z-10 rounded-[20px] overflow-hidden"
+                    initial={{ opacity: 1, filter: "blur(0px)" }}
+                    exit={{
+                      opacity: 0,
+                      filter: "blur(10px)",
+                      transition: { duration: 0.75, ease: easeIn },
+                    }}
+                  >
+                    <video autoPlay muted loop playsInline className="w-full h-full object-cover">
+                      <source src="https://assets.mixkit.co/videos/29982/29982-1080.mp4" type="video/mp4" />
+                    </video>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </motion.div>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+          </div>
 
-      {/* "que genera impacto real." — solo aparece después del split */}
-      <p className="text-[42px] leading-[1.15] font-normal text-right lg:text-[48px] xl:text-[56px]">
-        {CLOSING_WORDS.map((word, i) => (
-          <motion.span
-            key={i}
-            className="inline-block mr-[0.22em] last:mr-0"
-            initial={{ y: 18, opacity: 0 }}
-            animate={closingVisible ? { y: 0, opacity: 1 } : {}}
-            transition={{ duration: 0.95, ease: easeOut, delay: i * 0.18 }}
-          >
-            {word}
-          </motion.span>
-        ))}
-      </p>
+          {/* ── Closing text ── */}
+          <p className="text-[42px] leading-[1.15] font-normal text-right lg:text-[48px] xl:text-[56px]">
+            {CLOSING_WORDS.map((word, i) => (
+              <motion.span
+                key={word + i}
+                className="inline-block mr-[0.22em] last:mr-0"
+                initial={{ opacity: 0, y: 18 }}
+                animate={showCards ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+                transition={{ duration: 0.65, ease: easeOut, delay: 0.60 + i * 0.10 }}
+              >
+                {word}
+              </motion.span>
+            ))}
+          </p>
 
+        </div>
+      </div>
     </section>
   );
 }

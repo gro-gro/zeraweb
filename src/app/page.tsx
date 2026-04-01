@@ -7,6 +7,7 @@ import HeroSection from "@/components/HeroSection";
 import VideoSplitSection from "@/components/VideoSplitSection";
 import WorkSection from "@/components/WorkSection";
 import Footer from "@/components/Footer";
+import SmoothScroll from "@/components/SmoothScroll";
 
 // First hero video — preloaded so playback starts instantly
 const FIRST_VIDEO_SRC = "https://assets.mixkit.co/videos/921/921-1080.mp4";
@@ -47,6 +48,7 @@ export default function Home() {
   if (skipIntro) {
     return (
       <>
+        <SmoothScroll />
         <Navbar />
         <main>
           <HeroSection />
@@ -67,6 +69,7 @@ export default function Home() {
 
       {introComplete && (
         <>
+          <SmoothScroll />
           <Navbar />
           <main>
             <HeroSection />
