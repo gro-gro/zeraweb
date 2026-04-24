@@ -26,7 +26,7 @@ export default function WorkSection() {
             key={filter}
             onClick={() => setActiveFilter(activeFilter === filter ? null : filter)}
             className={`text-[20px] font-normal transition-colors duration-200 cursor-pointer
-              ${activeFilter === filter ? "text-black font-semibold" : "text-black/40 hover:text-black"}
+              ${activeFilter === filter ? "text-foreground font-semibold" : "text-foreground/40 hover:text-foreground"}
             `}
           >
             {filter}

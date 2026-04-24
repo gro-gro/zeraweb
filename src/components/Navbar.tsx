@@ -72,7 +72,7 @@ export default function Navbar() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            className="fixed inset-0 z-30 bg-white pt-[80px] lg:hidden"
+            className="fixed inset-0 z-30 bg-background pt-[80px] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -88,7 +88,7 @@ export default function Navbar() {
                 >
                   <Link
                     href={link.href}
-                    className="block text-[40px] font-extralight uppercase tracking-tight text-black no-underline"
+                    className="block text-[40px] font-extralight uppercase tracking-tight text-foreground no-underline"
                     onClick={() => setMenuOpen(false)}
                   >
                     {link.label}

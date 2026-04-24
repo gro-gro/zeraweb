@@ -23,7 +23,10 @@
       "WebFetch(domain:kube.io)",
       "Bash(wait)",
       "Bash(git fetch *)",
-      "Bash(echo \"EXIT=$?\")"
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(pnpm add *)",
+      "Bash(pnpm exec *)",
+      "WebFetch(domain:codesandbox.io)"
     ]
   }
 }

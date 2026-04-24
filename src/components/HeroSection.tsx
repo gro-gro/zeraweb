@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import HeroAsciiBackground from "./HeroAsciiBackground";
+
+const IS_DEV = process.env.NODE_ENV === "development";
+
+// Lazy-load leva only in dev so it never ships to production bundles.
+const HeroAsciiDevPanel = IS_DEV
+  ? dynamic(() => import("./HeroAsciiDevPanel"), { ssr: false })
+  : null;
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
 const ease = [0.4, 0, 0.2, 1] as const;
@@ -90,7 +98,7 @@ export default function HeroSection() {
   return (
     <section id="hero" className="relative h-screen w-full bg-background p-[15px]">
       <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-background">
-        <HeroAsciiBackground />
+        {HeroAsciiDevPanel ? <HeroAsciiDevPanel /> : <HeroAsciiBackground />}
 
         <motion.div
           className="relative z-10 flex h-full flex-col items-center justify-center text-center"
