@@ -21,7 +21,9 @@
       "Bash(gh auth:*)",
       "Bash(git config:*)",
       "WebFetch(domain:kube.io)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(git fetch *)",
+      "Bash(echo \"EXIT=$?\")"
     ]
   }
 }

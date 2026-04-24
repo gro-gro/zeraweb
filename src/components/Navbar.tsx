@@ -18,66 +18,57 @@ export default function Navbar() {
 
   return (
     <>
-      <nav
-        className="fixed top-[15px] left-[15px] right-[15px] z-40"
-        style={{ mixBlendMode: "difference", pointerEvents: "none" }}
-      >
+      <nav className="pointer-events-none fixed top-[18px] left-0 right-0 z-40 flex justify-center px-[15px]">
         <div
-          className="relative mx-auto flex max-w-[1600px] items-center justify-between h-[56px] px-[30px] lg:px-[60px] xl:px-[120px] text-white"
-          style={{ pointerEvents: "auto" }}
+          className="pointer-events-auto relative flex w-full max-w-[540px] items-center justify-between rounded-full border border-black/[0.06] bg-black/[0.04] py-[14px] pl-[24px] pr-[28px] backdrop-blur-[8px] lg:pl-[32px] lg:pr-[36px] dark:border-white/[0.08] dark:bg-white/[0.08]"
         >
-          <Link href="/">
-            <ZIcon className="w-[28px] h-[22px]" color="currentColor" />
+          <Link href="/" className="flex items-center gap-[10px] text-foreground no-underline">
+            <ZIcon className="h-[22px] w-[22px]" color="currentColor" />
+            <span
+              className="text-[17px] font-bold leading-none"
+              style={{ fontFamily: "var(--font-sans), sans-serif", letterSpacing: "-0.02em" }}
+            >
+              Zeratype
+            </span>
           </Link>
 
-          {/* Desktop links */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-[28px]">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-[14px] font-medium no-underline hover:opacity-60 transition-opacity"
-                style={{ color: "inherit" }}
+                className="text-[15px] font-normal text-foreground no-underline transition-opacity hover:opacity-60"
+                style={{ fontFamily: "var(--font-sans), sans-serif", letterSpacing: "-0.01em" }}
               >
                 {link.label}
               </Link>
             ))}
           </div>
 
-          {/* Mobile hamburger */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex flex-col justify-center gap-[5px] w-[28px] h-[22px] cursor-pointer lg:hidden"
+            className="flex h-[22px] w-[26px] flex-col justify-center gap-[5px] cursor-pointer lg:hidden"
             aria-label="Toggle menu"
           >
             <motion.span
-              className="block w-full h-[2px] origin-center bg-white"
-              animate={{
-                rotate: menuOpen ? 45 : 0,
-                y: menuOpen ? 7 : 0,
-              }}
+              className="block h-[2px] w-full origin-center bg-foreground"
+              animate={{ rotate: menuOpen ? 45 : 0, y: menuOpen ? 7 : 0 }}
               transition={{ duration: 0.3, ease: easeOut }}
             />
             <motion.span
-              className="block w-full h-[2px] bg-white"
-              animate={{
-                opacity: menuOpen ? 0 : 1,
-              }}
+              className="block h-[2px] w-full bg-foreground"
+              animate={{ opacity: menuOpen ? 0 : 1 }}
               transition={{ duration: 0.2 }}
             />
             <motion.span
-              className="block w-full h-[2px] origin-center bg-white"
-              animate={{
-                rotate: menuOpen ? -45 : 0,
-                y: menuOpen ? -7 : 0,
-              }}
+              className="block h-[2px] w-full origin-center bg-foreground"
+              animate={{ rotate: menuOpen ? -45 : 0, y: menuOpen ? -7 : 0 }}
               transition={{ duration: 0.3, ease: easeOut }}
             />
           </button>
         </div>
       </nav>
 
-      {/* Mobile menu overlay */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -97,7 +88,7 @@ export default function Navbar() {
                 >
                   <Link
                     href={link.href}
-                    className="text-[40px] font-extralight uppercase tracking-tight text-black no-underline block"
+                    className="block text-[40px] font-extralight uppercase tracking-tight text-black no-underline"
                     onClick={() => setMenuOpen(false)}
                   >
                     {link.label}
