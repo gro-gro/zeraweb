@@ -27,7 +27,12 @@
       "Bash(pnpm add *)",
       "Bash(pnpm exec *)",
       "WebFetch(domain:codesandbox.io)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "mcp__vercel__list_teams",
+      "mcp__vercel__list_projects",
+      "mcp__vercel__list_deployments",
+      "Bash(git ls-remote *)",
+      "mcp__vercel__get_project"
     ]
   }
 }
