@@ -68,6 +68,7 @@ function AsciiCanvas({
 }: Resolved & { onFatal: () => void }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const revealCanvasRef = useRef<HTMLCanvasElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const videoRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,6 +127,10 @@ function AsciiCanvas({
     let io: IntersectionObserver | null = null;
     let attachedVideoEl: HTMLVideoElement | null = null;
     let videoEndedHandler: (() => void) | null = null;
+    let revealPlayingHandler: (() => void) | null = null;
+    let revealRafId = 0;
+    let revealFailsafeId: number | undefined;
+    let revealStarted = false;
     // Flipped by IntersectionObserver — when the hero scrolls off-screen we
     // bail from the draw loop and pause the video decode.
     let paused = false;
@@ -182,6 +187,70 @@ function AsciiCanvas({
       const { w, h } = size();
       canvas.width = w;
       canvas.height = h;
+
+      const startReveal = () => {
+        if (revealStarted || disposed) return;
+        revealStarted = true;
+        const overlay = revealCanvasRef.current;
+        if (!overlay) return;
+        overlay.width = canvas.width;
+        overlay.height = canvas.height;
+        const ctx = overlay.getContext("2d");
+        if (!ctx) return;
+
+        const bg =
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--background")
+            .trim() || (isDark() ? "#000000" : "#ffffff");
+        const cell = Math.max(1, fontSize * dpr);
+        const cols = Math.ceil(overlay.width / cell);
+        const rows = Math.ceil(overlay.height / cell);
+        const total = cols * rows;
+        if (total <= 0) {
+          overlay.style.display = "none";
+          return;
+        }
+
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, overlay.width, overlay.height);
+        overlay.style.display = "";
+
+        const order = new Uint32Array(total);
+        for (let i = 0; i < total; i++) order[i] = i;
+        for (let i = total - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = order[i];
+          order[i] = order[j];
+          order[j] = tmp;
+        }
+
+        const duration = 1400;
+        const startTs = performance.now();
+        let revealed = 0;
+
+        const tick = (now: number) => {
+          if (disposed) return;
+          const elapsed = now - startTs;
+          const eased = Math.min(1, elapsed / duration);
+          const progress =
+            eased < 0.5
+              ? 4 * eased * eased * eased
+              : 1 - Math.pow(-2 * eased + 2, 3) / 2;
+          const target = Math.floor(progress * total);
+          while (revealed < target) {
+            const idx = order[revealed++];
+            const cx = (idx % cols) * cell;
+            const cy = Math.floor(idx / cols) * cell;
+            ctx.clearRect(cx, cy, cell, cell);
+          }
+          if (eased < 1) {
+            revealRafId = requestAnimationFrame(tick);
+          } else {
+            overlay.style.display = "none";
+          }
+        };
+        revealRafId = requestAnimationFrame(tick);
+      };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let t: any;
@@ -242,7 +311,14 @@ function AsciiCanvas({
             };
             attachedVideoEl = videoEl;
             videoEl.addEventListener("ended", videoEndedHandler);
+
+            revealPlayingHandler = () => startReveal();
+            videoEl.addEventListener("playing", revealPlayingHandler, { once: true });
           }
+          // Failsafe in case 'playing' never fires (e.g. autoplay blocked
+          // and user never interacts). Capped at 2.5s so the page never
+          // sits behind a solid overlay forever.
+          revealFailsafeId = window.setTimeout(startReveal, 2500);
 
           try {
             await video.play();
@@ -317,8 +393,13 @@ function AsciiCanvas({
       ro?.disconnect();
       mo?.disconnect();
       io?.disconnect();
+      if (revealRafId) cancelAnimationFrame(revealRafId);
+      if (revealFailsafeId !== undefined) window.clearTimeout(revealFailsafeId);
       if (attachedVideoEl && videoEndedHandler) {
         attachedVideoEl.removeEventListener("ended", videoEndedHandler);
+      }
+      if (attachedVideoEl && revealPlayingHandler) {
+        attachedVideoEl.removeEventListener("playing", revealPlayingHandler);
       }
       try {
         tRef.current?.destroy?.();
@@ -359,6 +440,11 @@ function AsciiCanvas({
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      <canvas
+        ref={revealCanvasRef}
+        aria-hidden
+        className="absolute inset-0 h-full w-full"
+      />
       {/*
        * Faux-mask: a solid radial gradient fading to the page background
        * replaces `mask-image: radial-gradient(...)` on the canvas. Alpha-masks
