@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import ThemeSelector from "@/components/ThemeSelector";
 
 const linkClass = "text-white hover:text-white/50 transition-colors duration-200";
 
@@ -53,9 +54,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <p className="text-[13px] text-white/30">
-          &copy; {new Date().getFullYear()} Zeratype
-        </p>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-[13px] text-white/30">
+            &copy; {new Date().getFullYear()} Zeratype
+          </p>
+          <ThemeSelector />
+        </div>
       </div>
     </footer>
   );
