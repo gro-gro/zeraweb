@@ -53,7 +53,7 @@ function CyclingBadge() {
         ))}
       </div>
 
-      <div className="relative inline-flex items-center gap-[8px] rounded-full border border-black/[0.06] bg-black/[0.04] px-4 py-[4px] backdrop-blur-[6px] dark:border-white/[0.08] dark:bg-white/[0.08]">
+      <div className="relative inline-flex items-center gap-[8px] rounded-full bg-black/[0.04] px-4 py-[4px] backdrop-blur-[6px] dark:bg-white/[0.08]">
         <span className="relative block w-[7px] h-[7px] shrink-0">
           <span className="absolute inset-0 rounded-full bg-red-500" />
           <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75" />
@@ -96,7 +96,17 @@ function CyclingBadge() {
 
 export default function HeroSection() {
   return (
-    <section id="hero" className="relative h-screen w-full bg-background p-[15px]">
+    <section
+      id="hero"
+      className="relative h-screen w-full bg-background p-[15px]"
+      style={{
+        // Skip paint/composite (including the canvas's blur + radial mask
+        // layers) whenever the hero scrolls out of the viewport. Paired with
+        // contain-intrinsic-size so the browser reserves the right space.
+        contentVisibility: "auto",
+        containIntrinsicSize: "100vh",
+      }}
+    >
       <div className="relative h-full w-full overflow-hidden rounded-[20px] bg-background">
         {HeroAsciiDevPanel ? <HeroAsciiDevPanel /> : <HeroAsciiBackground />}
 

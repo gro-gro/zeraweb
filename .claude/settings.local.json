@@ -26,7 +26,8 @@
       "Bash(echo \"EXIT=$?\")",
       "Bash(pnpm add *)",
       "Bash(pnpm exec *)",
-      "WebFetch(domain:codesandbox.io)"
+      "WebFetch(domain:codesandbox.io)",
+      "Bash(npx eslint *)"
     ]
   }
 }

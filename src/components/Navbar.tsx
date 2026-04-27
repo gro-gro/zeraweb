@@ -20,7 +20,7 @@ export default function Navbar() {
     <>
       <nav className="pointer-events-none fixed top-[18px] left-0 right-0 z-40 flex justify-center px-[15px]">
         <div
-          className="pointer-events-auto relative flex w-full max-w-[540px] items-center justify-between rounded-full border border-black/[0.06] bg-black/[0.04] py-[14px] pl-[24px] pr-[28px] backdrop-blur-[8px] lg:pl-[32px] lg:pr-[36px] dark:border-white/[0.08] dark:bg-white/[0.08]"
+          className="pointer-events-auto relative flex w-full max-w-[540px] items-center justify-between rounded-full bg-black/[0.04] py-[14px] pl-[24px] pr-[28px] backdrop-blur-[8px] lg:pl-[32px] lg:pr-[36px] dark:bg-white/[0.08]"
         >
           <Link href="/" className="flex items-center gap-[10px] text-foreground no-underline">
             <ZIcon className="h-[22px] w-[22px]" color="currentColor" />
