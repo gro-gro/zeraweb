@@ -32,7 +32,12 @@
       "mcp__vercel__list_projects",
       "mcp__vercel__list_deployments",
       "Bash(git ls-remote *)",
-      "mcp__vercel__get_project"
+      "mcp__vercel__get_project",
+      "Read(//f/1-Zeratype/2026/Zeracode/slideshow/app/components/**)",
+      "WebFetch(domain:www.myinstants.com)",
+      "Bash(powershell -Command \"Invoke-WebRequest -Uri 'https://www.myinstants.com/en/instant/oh-my-god-meme-88573/' -UserAgent 'Mozilla/5.0' -OutFile 'C:/Users/gro/AppData/Local/Temp/instant.html'\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path 'C:/Users/gro/.claude/sounds' | Out-Null; Invoke-WebRequest -Uri 'https://www.myinstants.com/media/sounds/oh-my-god-meme.mp3' -UserAgent 'Mozilla/5.0' -OutFile 'C:/Users/gro/.claude/sounds/oh-my-god.mp3'; \\(Get-Item 'C:/Users/gro/.claude/sounds/oh-my-god.mp3'\\).Length\")",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:/Users/gro/.claude/sounds/play-omg.ps1\")"
     ]
   }
 }
