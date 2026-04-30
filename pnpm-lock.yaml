@@ -72,6 +72,9 @@ importers:
       '@types/d3-interpolate':
         specifier: ^3.0.4
         version: 3.0.4
+      '@types/geojson':
+        specifier: ^7946.0.16
+        version: 7946.0.16
       '@types/node':
         specifier: ^20
         version: 20.19.39
@@ -84,6 +87,9 @@ importers:
       '@types/topojson-client':
         specifier: ^3.1.5
         version: 3.1.5
+      '@types/topojson-specification':
+        specifier: ^1.0.5
+        version: 1.0.5
       eslint:
         specifier: ^9
         version: 9.39.4(jiti@2.6.1)
