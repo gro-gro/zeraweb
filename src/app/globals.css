@@ -72,6 +72,14 @@
   html {
     @apply font-sans;
   }
+  ::selection {
+    background: #dcc0fb80;
+    color: black;
+  }
+  ::-moz-selection {
+    background: #dcc0fb80;
+    color: black;
+  }
 }
 
 /* Page margin: matches max-w-[1600px] mx-auto px-[…] container inset */

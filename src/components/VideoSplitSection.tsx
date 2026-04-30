@@ -73,19 +73,32 @@ const TEMATICAS = [
 ];
 
 const ECOSISTEMA_STATS = [
-  { value: "72", label: "cuentas activas" },
-  { value: "20", label: "medios propios" },
-  { value: "29", label: "creadores" },
-  { value: "5",  label: "plataformas"     },
-  { value: "9",  label: "nichos"          },
+  { value: "72", label: "Cuentas activas" },
+  { value: "20", label: "Medios propios"  },
+  { value: "29", label: "Creadores"       },
+  { value: "5",  label: "Plataformas"     },
+  { value: "9",  label: "Nichos"          },
 ];
 
-// Used for inline-style color animation (motion.div animates these via rgba lerp)
-const PROJECT_RANK_COLORS: { bg: string; text: string; muted: string }[] = [
+// Used for inline-style color animation (motion.div animates these via rgba lerp).
+// Two sets — light keeps the slideshow's high-contrast scaling (dark text on
+// less-saturated cards); dark keeps text white on every rank because the
+// low-alpha violets get composited against a dark page bg and would otherwise
+// produce dark text on a near-black surface.
+type RankPalette = { bg: string; text: string; muted: string };
+
+const PROJECT_RANK_COLORS_LIGHT: RankPalette[] = [
   { bg: "rgba(134, 80, 252, 1)",     text: "rgba(255, 255, 255, 1)",  muted: "rgba(255, 255, 255, 0.7)"  },
   { bg: "rgba(134, 80, 252, 0.78)",  text: "rgba(255, 255, 255, 1)",  muted: "rgba(255, 255, 255, 0.65)" },
   { bg: "rgba(134, 80, 252, 0.5)",   text: "rgba(20, 20, 20, 0.95)",  muted: "rgba(20, 20, 20, 0.6)"     },
   { bg: "rgba(134, 80, 252, 0.22)",  text: "rgba(20, 20, 20, 0.95)",  muted: "rgba(20, 20, 20, 0.55)"    },
+];
+
+const PROJECT_RANK_COLORS_DARK: RankPalette[] = [
+  { bg: "rgba(134, 80, 252, 1)",     text: "rgba(255, 255, 255, 1)",    muted: "rgba(255, 255, 255, 0.7)"  },
+  { bg: "rgba(134, 80, 252, 0.85)",  text: "rgba(255, 255, 255, 1)",    muted: "rgba(255, 255, 255, 0.7)"  },
+  { bg: "rgba(134, 80, 252, 0.65)",  text: "rgba(255, 255, 255, 0.95)", muted: "rgba(255, 255, 255, 0.6)"  },
+  { bg: "rgba(134, 80, 252, 0.42)",  text: "rgba(255, 255, 255, 0.9)",  muted: "rgba(255, 255, 255, 0.55)" },
 ];
 
 /* ── Cycle controller for passive shimmer (one cell at a time) ────────────── */
@@ -114,12 +127,40 @@ function usePassiveCycle(active: boolean, intervalMs = 3000): PassiveId {
 
 /* ── Globe rotation cycle ─────────────────────────────────────────────────── */
 
+/* ── Dark-mode detector — observes the .dark class on <html> ──────────────── */
+
+function useIsDark(): boolean {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    const update = () => setIsDark(el.classList.contains("dark"));
+    update();
+    const mo = new MutationObserver(update);
+    mo.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+  return isDark;
+}
+
 function usePaisCycle(active: boolean, intervalMs = 2400): number {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (!active) return;
     const t = setInterval(
       () => setIdx((i) => (i + 1) % PAISES.length),
+      intervalMs,
+    );
+    return () => clearInterval(t);
+  }, [active, intervalMs]);
+  return idx;
+}
+
+function useEcosistemaCycle(active: boolean, intervalMs = 2200): number {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(
+      () => setIdx((i) => (i + 1) % ECOSISTEMA_STATS.length),
       intervalMs,
     );
     return () => clearInterval(t);
@@ -207,7 +248,10 @@ function SectionLabel({
   return (
     <div
       className={cn(
-        "font-medium uppercase tracking-[0.05em] text-[18px] text-foreground/40",
+        // Absolute black/40 instead of text-foreground/40 — these labels live
+        // on white-variant cards which stay literally white in dark mode, so
+        // theme-adaptive foreground would invert and become invisible.
+        "font-medium uppercase tracking-[0.05em] text-[18px] text-black/40",
         className,
       )}
     >
@@ -226,7 +270,10 @@ function BigNumber({
   return (
     <div
       className={cn(
-        "font-extrabold text-foreground leading-none tracking-[-4px] text-[96px]",
+        // text-[#1b1b1b] (slideshow ink color) — same reason as SectionLabel:
+        // BigNumber sits on a literal white card by default. CellCreadores
+        // overrides via className="text-white".
+        "font-extrabold text-[#1b1b1b] leading-none tracking-[-4px] text-[96px]",
         className,
       )}
     >
@@ -439,7 +486,7 @@ function CellAlcanceTotal({ active, passive }: { active: boolean; passive: boole
         <BigNumber>
           <AnimatedNumber value={16.5} active={active} prefix="+" suffix="M" decimals={1} />
         </BigNumber>
-        <div className="text-[22px] font-normal text-foreground/45 mt-[14px] tracking-[-0.3px] leading-[1.4]">
+        <div className="text-[22px] font-normal text-black/45 mt-[14px] tracking-[-0.3px] leading-[1.4]">
           Personas en la red
           <br />
           Zeratype
@@ -695,13 +742,15 @@ function useInfiniteCarousel({
 
 function CellProyectos({ active }: { active: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isDark = useIsDark();
   const idx = useInfiniteCarousel({
     length: PROYECTOS.length,
     active,
     intervalMs: 4500,
     scrollRef,
   });
-  const c = PROJECT_RANK_COLORS[idx];
+  const palette = isDark ? PROJECT_RANK_COLORS_DARK : PROJECT_RANK_COLORS_LIGHT;
+  const c = palette[idx];
   // Triplicated for invisible-snap infinite scroll
   const slides = [...PROYECTOS, ...PROYECTOS, ...PROYECTOS];
 
@@ -764,13 +813,15 @@ function CellProyectos({ active }: { active: boolean }) {
 
 function MobileProyectosCarousel({ active }: { active: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isDark = useIsDark();
   const idx = useInfiniteCarousel({
     length: PROYECTOS.length,
     active,
     intervalMs: 4000,
     scrollRef,
   });
-  const c = PROJECT_RANK_COLORS[idx];
+  const palette = isDark ? PROJECT_RANK_COLORS_DARK : PROJECT_RANK_COLORS_LIGHT;
+  const c = palette[idx];
   const slides = [...PROYECTOS, ...PROYECTOS, ...PROYECTOS];
 
   return (
@@ -860,15 +911,15 @@ function CellYouTube({ active, passive }: { active: boolean; passive: boolean })
     >
       <div className="flex items-center gap-[10px]">
         <YouTubeIcon size={22} color="rgba(0,0,0,0.3)" />
-        <span className="text-[16px] font-semibold text-foreground/30 tracking-[0.04em] uppercase">
+        <span className="text-[16px] font-semibold text-black/30 tracking-[0.04em] uppercase">
           YouTube
         </span>
       </div>
       <div>
-        <div className="text-[72px] font-extrabold text-foreground leading-none tracking-[-3px]">
+        <div className="text-[72px] font-extrabold text-[#1b1b1b] leading-none tracking-[-3px]">
           <AnimatedNumber value={1.66} active={active} prefix="+" suffix="M" decimals={2} />
         </div>
-        <div className="text-[18px] font-normal text-foreground/45 mt-[10px] tracking-[-0.2px]">
+        <div className="text-[18px] font-normal text-black/45 mt-[10px] tracking-[-0.2px]">
           reproducciones totales
         </div>
       </div>
@@ -905,46 +956,47 @@ function CellTematicas() {
   );
 }
 
-/* ── Ecosistema (left-aligned title, big centered numbers, labels below) ──── */
+/* ── Ecosistema (cycling — section title top-left, label baseline-aligned ──── */
+/*    with bottom of number on the right) ─────────────────────────────────── */
 
-function CellEcosistema() {
+function CellEcosistema({ active }: { active: boolean }) {
+  const idx = useEcosistemaCycle(active);
+  const current = ECOSISTEMA_STATS[idx];
+
   return (
     <BentoCard
       variant="white"
-      className="w-[570px] h-[267px] px-[40px] py-[36px] flex flex-col"
+      className="w-[570px] h-[267px] px-[40px] pt-[40px] relative"
     >
-      <SectionLabel className="text-left">El ecosistema en números</SectionLabel>
+      <SectionLabel>El ecosistema en números</SectionLabel>
 
-      {/* Numbers row — each cell flex-1 with content horizontally centered.
-          Only the number is centered; labels below sit in their own row. */}
-      <div className="flex mt-auto">
-        {ECOSISTEMA_STATS.map((s, i) => (
-          <div
-            key={`v-${i}`}
-            className={cn(
-              "flex-1 flex items-end justify-center text-[72px] font-extrabold text-foreground leading-none tracking-[-3px] tabular-nums",
-              i > 0 && "border-l border-foreground/[0.08]",
-            )}
-          >
-            {s.value}
+      {/* `last baseline` aligns the last-line baseline of the label with the
+          number's baseline — pixel-aligned bottom regardless of 1↔2 line wrap.
+          Negative `bottom` drops the empty descender area below the card edge
+          (clipped by overflow-hidden) so the visible glyph bottom sits flush. */}
+      <div
+        className="absolute left-[40px] right-[40px] flex justify-between gap-6"
+        style={{ alignItems: "last baseline", bottom: -14 }}
+      >
+        {/* Outer wrapper carries the mask + vertical padding so glyphs whose
+            ascenders/descenders overflow the tight line-box don't get clipped
+            by the mask (mask-image clips to the element's box). */}
+        <div
+          className="flex-1 min-w-0 py-2"
+          style={{
+            maskImage:
+              "linear-gradient(to left, transparent 0%, black 4%, black 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to left, transparent 0%, black 4%, black 100%)",
+          }}
+        >
+          <div className="text-left text-[56px] font-extrabold text-[#1b1b1b] leading-[0.8] tracking-[-2px]">
+            <ScrambleText text={current.label} duration={500} />
           </div>
-        ))}
-      </div>
-
-      {/* Labels row — top-aligned, NOT centered. Same flex-1 columns; labels
-          flow naturally below numbers without recentering them. */}
-      <div className="flex items-start mt-3">
-        {ECOSISTEMA_STATS.map((s, i) => (
-          <div
-            key={`l-${i}`}
-            className={cn(
-              "flex-1 px-2 text-[13px] font-normal text-foreground/45 leading-[1.3] tracking-[-0.1px]",
-              i > 0 && "border-l border-foreground/[0.08]",
-            )}
-          >
-            {s.label}
-          </div>
-        ))}
+        </div>
+        <div className="text-[128px] font-extrabold text-[#1b1b1b] leading-[0.78] tracking-[-5px] tabular-nums">
+          <AnimatedNumber value={Number(current.value)} active={active} />
+        </div>
       </div>
     </BentoCard>
   );
@@ -960,7 +1012,7 @@ function BentoGrid({
   passive: PassiveId;
 }) {
   return (
-    <div className="flex flex-col" style={{ width: BENTO_W, gap: GAP }}>
+    <div className="flex flex-col select-none" style={{ width: BENTO_W, gap: GAP }}>
       <div className="flex" style={{ height: ROW1_H, gap: GAP }}>
         <CellAlcanceTotal active={active} passive={passive === "alcance"} />
         <CellSplit         active={active} passive={passive === "split"} />
@@ -976,7 +1028,7 @@ function BentoGrid({
         <CellProyectosCount active={active} passive={passive === "proyectosCount"} />
         <CellYouTube        active={active} passive={passive === "youtube"} />
         <CellTematicas />
-        <CellEcosistema />
+        <CellEcosistema     active={active} />
       </div>
     </div>
   );
@@ -995,23 +1047,25 @@ function MobileBento({
 }) {
   const idx = usePaisCycle(active);
   const current = PAISES[idx];
+  const ecoIdx = useEcosistemaCycle(active);
+  const ecoCurrent = ECOSISTEMA_STATS[ecoIdx];
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 select-none">
       {/* Alcance + Split (collapsed) */}
       <div className="grid grid-cols-2 gap-3">
         <BentoCard
           variant="white"
           className="col-span-2 p-6 h-[180px] flex flex-col justify-between"
         >
-          <div className="text-[12px] font-medium uppercase tracking-[0.05em] text-foreground/40">
+          <div className="text-[12px] font-medium uppercase tracking-[0.05em] text-black/40">
             Alcance total combinado
           </div>
           <div>
-            <div className="text-[58px] font-extrabold text-foreground leading-none tracking-[-2px]">
+            <div className="text-[58px] font-extrabold text-[#1b1b1b] leading-none tracking-[-2px]">
               <AnimatedNumber value={16.5} active={active} prefix="+" suffix="M" decimals={1} />
             </div>
-            <div className="text-[13px] font-normal text-foreground/45 mt-[8px] tracking-[-0.2px]">
+            <div className="text-[13px] font-normal text-black/45 mt-[8px] tracking-[-0.2px]">
               Personas en la red Zeratype
             </div>
           </div>
@@ -1121,19 +1175,19 @@ function MobileBento({
 
         <BentoCard
           variant="white"
-          className="p-5 h-[170px] flex flex-col justify-between"
+          className="p-4 h-[170px] flex flex-col justify-between overflow-hidden"
         >
-          <div className="flex items-center gap-2">
-            <YouTubeIcon size={16} color="rgba(0,0,0,0.3)" />
-            <span className="text-[10px] font-semibold text-foreground/30 tracking-[0.04em] uppercase">
+          <div className="flex items-center gap-1.5">
+            <YouTubeIcon size={14} color="rgba(0,0,0,0.3)" />
+            <span className="text-[10px] font-semibold text-black/30 tracking-[0.04em] uppercase">
               YouTube
             </span>
           </div>
-          <div>
-            <div className="text-[40px] font-extrabold text-foreground leading-none tracking-[-1.5px]">
+          <div className="min-w-0">
+            <div className="text-[30px] font-extrabold text-[#1b1b1b] leading-none tracking-[-1.2px] tabular-nums whitespace-nowrap">
               <AnimatedNumber value={1.66} active={active} prefix="+" suffix="M" decimals={2} />
             </div>
-            <div className="text-[10px] font-normal text-foreground/45 mt-1">
+            <div className="text-[10px] font-normal text-black/45 mt-1 truncate">
               reproducciones
             </div>
           </div>
@@ -1162,35 +1216,30 @@ function MobileBento({
       </BentoCard>
 
       {/* Ecosistema */}
-      <BentoCard variant="white" className="p-5 h-[170px] flex flex-col">
-        <div className="text-[12px] font-medium uppercase tracking-[0.05em] text-foreground/40 text-right">
+      <BentoCard variant="white" className="h-[170px] px-5 pt-6 relative">
+        <div className="text-[12px] font-medium uppercase tracking-[0.05em] text-black/40">
           El ecosistema en números
         </div>
-        <div className="flex mt-auto">
-          {ECOSISTEMA_STATS.map((s, i) => (
-            <div
-              key={`v-${i}`}
-              className={cn(
-                "flex-1 text-center text-[26px] font-extrabold text-foreground leading-none tracking-[-0.5px] tabular-nums",
-                i > 0 && "border-l border-foreground/[0.08]",
-              )}
-            >
-              {s.value}
+        <div
+          className="absolute left-5 right-5 flex justify-between gap-3"
+          style={{ alignItems: "last baseline", bottom: -8 }}
+        >
+          <div
+            className="flex-1 min-w-0 py-1"
+            style={{
+              maskImage:
+                "linear-gradient(to left, transparent 0%, black 4%, black 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to left, transparent 0%, black 4%, black 100%)",
+            }}
+          >
+            <div className="text-left text-[28px] font-extrabold text-[#1b1b1b] leading-[0.8] tracking-[-1px]">
+              <ScrambleText text={ecoCurrent.label} duration={500} />
             </div>
-          ))}
-        </div>
-        <div className="flex items-start mt-2">
-          {ECOSISTEMA_STATS.map((s, i) => (
-            <div
-              key={`l-${i}`}
-              className={cn(
-                "flex-1 px-1 text-center text-[9px] font-normal text-foreground/45 leading-[1.2]",
-                i > 0 && "border-l border-foreground/[0.08]",
-              )}
-            >
-              {s.label}
-            </div>
-          ))}
+          </div>
+          <div className="text-[68px] font-extrabold text-[#1b1b1b] leading-[0.78] tracking-[-2.5px] tabular-nums">
+            <AnimatedNumber value={Number(ecoCurrent.value)} active={active} />
+          </div>
         </div>
       </BentoCard>
     </div>
@@ -1238,7 +1287,7 @@ export default function VideoSplitSection() {
     <section ref={sectionRef} className="relative py-16 md:py-24 lg:py-32">
       <div className="mx-auto max-w-[1600px] px-[30px] lg:px-[60px] xl:px-[120px]">
         {/* Opening text */}
-        <p className="text-[36px] leading-[1.15] font-normal mb-8 md:text-[42px] md:mb-10 lg:text-[56px] lg:mb-14 xl:text-[64px]">
+        <p className="select-none text-[36px] leading-[1.15] font-normal mb-8 md:text-[42px] md:mb-10 lg:text-[56px] lg:mb-14 xl:text-[64px]">
           {OPENING_WORDS.map((word, i) => (
             <motion.span
               key={word + i}
@@ -1283,7 +1332,7 @@ export default function VideoSplitSection() {
         </motion.div>
 
         {/* Closing text */}
-        <p className="text-[36px] leading-[1.15] font-normal text-right mt-8 md:text-[42px] md:mt-10 lg:text-[56px] lg:mt-14 xl:text-[64px]">
+        <p className="select-none text-[36px] leading-[1.15] font-normal text-right mt-8 md:text-[42px] md:mt-10 lg:text-[56px] lg:mt-14 xl:text-[64px]">
           {CLOSING_WORDS.map((word, i) => (
             <motion.span
               key={word + i}

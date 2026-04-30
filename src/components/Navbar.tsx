@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ZIcon } from "./ZeratypeLogo";
 import Link from "next/link";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
@@ -22,8 +21,7 @@ export default function Navbar() {
         <div
           className="pointer-events-auto relative flex w-full max-w-[540px] items-center justify-between rounded-full bg-black/[0.04] py-[14px] pl-[24px] pr-[28px] backdrop-blur-[8px] lg:pl-[32px] lg:pr-[36px] dark:bg-white/[0.08]"
         >
-          <Link href="/" className="flex items-center gap-[10px] text-foreground no-underline">
-            <ZIcon className="h-[22px] w-[22px]" color="currentColor" />
+          <Link href="/" className="flex items-center text-foreground no-underline">
             <span
               className="text-[17px] font-bold leading-none"
               style={{ fontFamily: "var(--font-sans), sans-serif", letterSpacing: "-0.02em" }}

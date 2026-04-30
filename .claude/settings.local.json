@@ -41,7 +41,9 @@
       "mcp__vercel__get_deployment_build_logs",
       "Bash(pnpm --version)",
       "Bash(rm package-lock.json)",
-      "Bash(pnpm install *)"
+      "Bash(pnpm install *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git add *)"
     ]
   }
 }

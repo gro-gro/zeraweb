@@ -176,17 +176,36 @@ function AsciiCanvas({
 
       if (disposed) return;
 
+      // Below 16:9 (portrait/mobile) we vertical-fit at the source video's
+      // aspect ratio so the canvas oversizes width and the wrapper's overflow
+      // crops the sides. At 16:9 or wider (desktop) we fill the wrapper
+      // exactly — preserves the previous desktop look.
+      const TARGET_ASPECT = 16 / 9;
       const size = () => {
         const r = wrapper.getBoundingClientRect();
+        const wrapperAspect = r.height > 0 ? r.width / r.height : TARGET_ASPECT;
+        let cssW: number;
+        let cssH: number;
+        if (wrapperAspect < TARGET_ASPECT) {
+          cssH = Math.max(1, r.height);
+          cssW = cssH * TARGET_ASPECT;
+        } else {
+          cssW = Math.max(1, r.width);
+          cssH = Math.max(1, r.height);
+        }
         return {
-          w: Math.max(1, Math.floor(r.width * dpr)),
-          h: Math.max(1, Math.floor(r.height * dpr)),
+          w: Math.max(1, Math.floor(cssW * dpr)),
+          h: Math.max(1, Math.floor(cssH * dpr)),
+          cssW,
+          cssH,
         };
       };
 
-      const { w, h } = size();
+      const { w, h, cssW, cssH } = size();
       canvas.width = w;
       canvas.height = h;
+      canvas.style.width = `${cssW}px`;
+      canvas.style.height = `${cssH}px`;
 
       const startReveal = () => {
         if (revealStarted || disposed) return;
@@ -195,6 +214,8 @@ function AsciiCanvas({
         if (!overlay) return;
         overlay.width = canvas.width;
         overlay.height = canvas.height;
+        overlay.style.width = canvas.style.width;
+        overlay.style.height = canvas.style.height;
         const ctx = overlay.getContext("2d");
         if (!ctx) return;
 
@@ -347,9 +368,16 @@ function AsciiCanvas({
 
       ro = new ResizeObserver(() => {
         if (disposed || !tRef.current?.resizeCanvas) return;
-        const { w: nw, h: nh } = size();
+        const { w: nw, h: nh, cssW: ncw, cssH: nch } = size();
         try {
           tRef.current.resizeCanvas(nw, nh);
+          canvas.style.width = `${ncw}px`;
+          canvas.style.height = `${nch}px`;
+          const overlay = revealCanvasRef.current;
+          if (overlay) {
+            overlay.style.width = `${ncw}px`;
+            overlay.style.height = `${nch}px`;
+          }
         } catch (err) {
           handleFatal(err);
         }
@@ -439,24 +467,31 @@ function AsciiCanvas({
       aria-hidden
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      {/*
+       * Canvas is centered horizontally and sized at the source video's
+       * aspect ratio (16:9) relative to the wrapper's height. On portrait
+       * viewports the canvas is wider than the wrapper and the side bleed
+       * is hidden by the wrapper's overflow-hidden ("vertical fit, side
+       * crop"). On wide viewports the canvas may be slightly narrower than
+       * the wrapper and the matching page-bg fills the gap.
+       */}
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-1/2 -translate-x-1/2"
+      />
       <canvas
         ref={revealCanvasRef}
         aria-hidden
-        className="absolute inset-0 h-full w-full"
+        className="absolute top-0 left-1/2 -translate-x-1/2"
       />
       {/*
-       * Faux-mask: a solid radial gradient fading to the page background
-       * replaces `mask-image: radial-gradient(...)` on the canvas. Alpha-masks
-       * force an extra compositor pass per frame; a plain layer stacked on
-       * top is ~an order of magnitude cheaper to re-composite.
+       * Faux-mask: same radial ellipse shape on every viewport, but rx is
+       * bumped from 30% → 45% below md so the spotlight isn't too narrow
+       * on portrait (where 30% of a thin element is too few pixels). ry
+       * and the transparency stops match desktop.
        */}
       <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 30% 38% at 50% 52%, transparent 40%, var(--background) 100%)",
-        }}
+        className="absolute inset-0 [background:radial-gradient(ellipse_45%_38%_at_50%_52%,transparent_40%,var(--background)_100%)] md:[background:radial-gradient(ellipse_30%_38%_at_50%_52%,transparent_40%,var(--background)_100%)]"
       />
     </div>
   );

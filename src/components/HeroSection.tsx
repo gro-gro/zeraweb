@@ -117,7 +117,7 @@ export default function HeroSection() {
           transition={{ duration: 0.8, ease: easeOut, delay: 0.1 }}
         >
           <motion.div
-            className="mb-6"
+            className="mb-6 select-none"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease }}
@@ -126,7 +126,7 @@ export default function HeroSection() {
           </motion.div>
 
           <motion.h1
-            className="whitespace-nowrap px-[30px] text-[40px] leading-[0.95] text-foreground md:text-[65px] lg:text-[86px] xl:text-[108px]"
+            className="whitespace-nowrap px-[30px] text-[clamp(1.5rem,7.5vw,6.75rem)] leading-[0.95] text-foreground"
             style={{ fontFamily: HEADING_FONT, fontWeight: 400, letterSpacing: "-0.02em" }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -136,7 +136,7 @@ export default function HeroSection() {
           </motion.h1>
 
           <motion.p
-            className="mt-6 max-w-[620px] px-[30px] text-[15px] font-medium leading-[1.3] text-foreground lg:text-[17px]"
+            className="mt-6 max-w-[620px] px-[30px] text-[clamp(0.875rem,1.6vw,1.0625rem)] font-medium leading-[1.3] text-foreground"
             style={{ fontFamily: `var(--font-sans), sans-serif`, letterSpacing: "-0.01em" }}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
